@@ -1,7 +1,7 @@
 CC = gcc
 all: bin/main
 
-bin/main: obj/main.o
+bin/main: obj/main.o 
 	$(CC) -o $@ $^
 
 obj/main.o: src/main.c
