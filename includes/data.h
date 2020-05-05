@@ -10,13 +10,14 @@ int numberOfElements = 0;
 void makeArray() {
     srand(time(0));
 
-    printf("Enter number of elements: ");
+    printf("\nEnter number of elements: ");
     scanf("%d", &numberOfElements);
     array = (int *)calloc(numberOfElements, sizeof(int));
     for (int i = 0; i < numberOfElements; i++) {
-        array[i] = rand() % 100000;
-        printf("%d\n", array[i]);
+        array[i] = rand() % 1000000;
+        printf("%d ", array[i]);
     }
+    printf("\n");
 }
 
 void cleanArray() {
