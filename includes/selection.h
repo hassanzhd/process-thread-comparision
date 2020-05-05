@@ -34,7 +34,7 @@ void selectionSortThread() {
     clock_t start;
     start = clock();
 
-    arr = array;
+    arr = selectionArray;
     boundary = numberOfElements;
     for (int i = 0; i < numberOfElements; i++) {
         for (int i = 0; i < THREAD_MAX; i++)
@@ -48,8 +48,8 @@ void selectionSortThread() {
         for (int i = 0; i < THREAD_MAX; i++)
             pthread_join(threads[i], NULL);
 
-        int temp = *(array + i);
-        array[i] = arr[min];
+        int temp = *(selectionArray + i);
+        selectionArray[i] = arr[min];
         arr[min] = temp;
 
         // updating/ resetting values
@@ -61,7 +61,7 @@ void selectionSortThread() {
 
     printf("\nElements after sorting:\n");
     for (int i = 0; i < numberOfElements; i++) {
-        printf("%d ", array[i]);
+        printf("%d ", selectionArray[i]);
     }
     printf("\n");
 
@@ -84,20 +84,20 @@ void selectionSortThread() {
         int min = i;
 
         for (int j = i + 1; j < numberOfElements; j++) {
-            if (array[j] < array[min]) {
+            if (selectionArray[j] < selectionArray[min]) {
                 min = j;
             }
         }
 
-        temp = array[i];
-        array[i] = array[min];
-        array[min] = temp;
+        temp = selectionArray[i];
+        selectionArray[i] = selectionArray[min];
+        selectionArray[min] = temp;
     }
 
     printf("\nArray after sort:\n");
 
     for (int i = 0; i < numberOfElements; i++) {
-        printf("%d ", array[i]);
+        printf("%d ", selectionArray[i]);
     }
     printf("\n");
 

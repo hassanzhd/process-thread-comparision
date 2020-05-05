@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <time.h>
 
-int *array;
+int *selectionArray;
 int numberOfElements = 0;
 
 void makeArray() {
@@ -12,16 +12,16 @@ void makeArray() {
 
     printf("\nEnter number of elements: ");
     scanf("%d", &numberOfElements);
-    array = (int *)calloc(numberOfElements, sizeof(int));
+    selectionArray = (int *)calloc(numberOfElements, sizeof(int));
     for (int i = 0; i < numberOfElements; i++) {
-        array[i] = rand() % 1000000;
-        printf("%d ", array[i]);
+        selectionArray[i] = rand() % 1000000;
+        printf("%d ", selectionArray[i]);
     }
     printf("\n");
 }
 
 void cleanArray() {
-    free(array);
+    free(selectionArray);
 }
 
 #endif
