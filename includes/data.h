@@ -4,24 +4,29 @@
 #include <stdlib.h>
 #include <time.h>
 
-int *selectionArray;
 int numberOfElements = 0;
+int *selectionTDataArray;  // Array for Thread implementation
+
+int *selectionPDataArray;  // Array for process implementation
 
 void makeArray() {
     srand(time(0));
 
     printf("\nEnter number of elements: ");
     scanf("%d", &numberOfElements);
-    selectionArray = (int *)calloc(numberOfElements, sizeof(int));
+    selectionTDataArray = (int *)calloc(numberOfElements, sizeof(int));
+    selectionPDataArray = (int *)calloc(numberOfElements, sizeof(int));
+    printf("\nOriginal Array:\n");
     for (int i = 0; i < numberOfElements; i++) {
-        selectionArray[i] = rand() % 1000000;
-        printf("%d ", selectionArray[i]);
+        selectionTDataArray[i] = selectionPDataArray[i] = rand() % 100000;
+        printf("%d ", selectionTDataArray[i]);
     }
     printf("\n");
 }
 
 void cleanArray() {
-    free(selectionArray);
+    free(selectionTDataArray);
+    free(selectionPDataArray);
 }
 
 #endif
