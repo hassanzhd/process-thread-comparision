@@ -14,22 +14,21 @@
 #include "data.h"
 
 /* Selection sort thread implementation */
-#define THREAD_MAX 4  // maximum number of threads depending upon cores
 
-int threadNumber = 0;  // helps in partitioning array (start/end values)
-int *threadArr;        /* for minimum calculation as no inner loop exists hence array must be 
+int selectionThreadNumber = 0;  // helps in partitioning array (start/end values)
+int *selectionThreadArr;        /* for minimum calculation as no inner loop exists hence array must be 
                         in sync with main loop. Increments with every iteration */
-int boundary = 0;      /* helps in new array size calculation with every iteration  */
-int min = 0;           /* index of minimum value */
+int boundary = 0;               /* helps in new array size calculation with every iteration  */
+int min = 0;                    /* index of minimum value */
 
 void *minimumThread(void *__args) {
-    int i, start = threadNumber++;
+    int i, start = selectionThreadNumber++;
     float factor = ceil((float)boundary / THREAD_MAX); /* 
         factor is used because with array size decreasing and partitioning being done, invalid 
         number can occur in start/ end values. 
      */
     for (i = start * (factor); (i < (start + 1) * factor) && i < boundary; i++) {
-        if (threadArr[i] < threadArr[min]) {
+        if (selectionThreadArr[i] < selectionThreadArr[min]) {
             min = i;
         }
     }
@@ -45,7 +44,7 @@ void selectionSortThread() {
     clock_t start;
     start = clock();
 
-    threadArr = selectionTDataArray;
+    selectionThreadArr = selectionTDataArray;
     boundary = numberOfElements;
     for (int i = 0; i < numberOfElements; i++) {
         for (int i = 0; i < THREAD_MAX; i++) {
@@ -60,12 +59,12 @@ void selectionSortThread() {
             pthread_join(threads[i], NULL);
         }
         int temp = *(selectionTDataArray + i);
-        selectionTDataArray[i] = threadArr[min];
-        threadArr[min] = temp;
+        selectionTDataArray[i] = selectionThreadArr[min];
+        selectionThreadArr[min] = temp;
 
         // updating/ resetting values
-        threadNumber = 0;
-        threadArr++;
+        selectionThreadNumber = 0;
+        selectionThreadArr++;
         boundary--;
         min = 0;
     }
@@ -81,19 +80,19 @@ void selectionSortThread() {
 }
 
 /* Selection sort process implementation */
-#define PROCESS_MAX 4
-int processNumber;
-int *processArr;
+
+int selectionProcessNumber;
+int *selectionProcessArr;
 int fd[4][2];
 
 void minimumProcess() {
-    int i, start = processNumber;
+    int i, start = selectionProcessNumber;
     float factor = ceil((float)boundary / PROCESS_MAX); /* 
         factor is used because with array size decreasing and partitioning being done, invalid 
         number can occur in start/ end values. 
      */
     for (i = start * (factor); (i < (start + 1) * factor) && i < boundary; i++) {
-        if (processArr[i] < processArr[min]) {
+        if (selectionProcessArr[i] < selectionProcessArr[min]) {
             min = i;
         }
     }
@@ -109,33 +108,28 @@ void IPC() {
         exit(0);
     } else if (process[0] > 0) {
         process[1] = fork();
-        processNumber++;
+        selectionProcessNumber++;
         if (process[1] == 0) {
             minimumProcess();
             write(fd[1][1], &min, sizeof(int));
             exit(0);
         } else if (process[1] > 0) {
             process[2] = fork();
-            processNumber++;
+            selectionProcessNumber++;
             if (process[2] == 0) {
                 minimumProcess();
                 write(fd[2][1], &min, sizeof(int));
                 exit(0);
             } else if (process[2] > 0) {
                 process[3] = fork();
-                processNumber++;
+                selectionProcessNumber++;
                 if (process[3] == 0) {
                     minimumProcess();
                     write(fd[3][1], &min, sizeof(int));
                     exit(0);
-                } else if (process[3] > 0) {
-                    wait(NULL);
                 }
-                wait(NULL);
             }
-            wait(NULL);
         }
-
         wait(NULL);
         for (int i = 0; i < PROCESS_MAX; i++) {
             read(fd[i][0], &minArray[i], sizeof(int));
@@ -143,7 +137,7 @@ void IPC() {
 
         min = minArray[0];
         for (int i = 1; i < PROCESS_MAX; i++) {
-            if (processArr[minArray[i]] < processArr[min]) {
+            if (selectionProcessArr[minArray[i]] < selectionProcessArr[min]) {
                 min = minArray[i];
             }
         }
@@ -151,9 +145,9 @@ void IPC() {
 }
 
 void selectionSortProcess() {
-    processNumber = min = 0;
+    selectionProcessNumber = min = 0;
     boundary = numberOfElements;
-    processArr = selectionPDataArray;
+    selectionProcessArr = selectionPDataArray;
 
     printf("\n=====================\n");
     printf("SORTING USING PROCESS\n");
@@ -170,11 +164,11 @@ void selectionSortProcess() {
         IPC();
 
         int temp = *(selectionPDataArray + i);
-        selectionPDataArray[i] = processArr[min];
-        processArr[min] = temp;
+        selectionPDataArray[i] = selectionProcessArr[min];
+        selectionProcessArr[min] = temp;
 
-        processNumber = 0;
-        processArr++;
+        selectionProcessNumber = 0;
+        selectionProcessArr++;
         boundary--;
         min = 0;
     }
@@ -185,7 +179,7 @@ void selectionSortProcess() {
     printf("\n");
 
     start = clock() - start;
-    printf("Time taken for sorting using processes: %f seconds\n", (float)start / CLOCKS_PER_SEC);
+    printf("\nTime taken for sorting using processes: %f seconds\n", (float)start / CLOCKS_PER_SEC);
 }
 
 /* 
