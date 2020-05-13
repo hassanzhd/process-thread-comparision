@@ -179,7 +179,7 @@ void selectionSortProcess() {
     printf("\n");
 
     start = clock() - start;
-    printf("Time taken for sorting using processes: %f seconds\n", (float)start / CLOCKS_PER_SEC);
+    printf("\nTime taken for sorting using processes: %f seconds\n", (float)start / CLOCKS_PER_SEC);
 }
 
 /* 

@@ -7,10 +7,10 @@
 #define THREAD_MAX 4  // maximum number of threads depending upon cores
 #define PROCESS_MAX 4
 
-int numberOfElements = 0;
-int *selectionTDataArray;  // Array for Thread implementation
-int *selectionPDataArray;  // Array for process implementation
-int *mergeTDataArray;
+int numberOfElements = 0;  // total number of array elements
+int *selectionTDataArray;  // Array for selection sort thread implementation
+int *selectionPDataArray;  // Array for selection sort process implementation
+int *mergeTDataArray;      // Array for merge sort thread implementation
 
 void makeArray() {
     srand(time(0));
@@ -22,7 +22,7 @@ void makeArray() {
     mergeTDataArray = (int *)calloc(numberOfElements, sizeof(int));
     printf("\nOriginal Array:\n");
     for (int i = 0; i < numberOfElements; i++) {
-        selectionTDataArray[i] = selectionPDataArray[i] = mergeTDataArray[i] = rand() % 100000;
+        selectionTDataArray[i] = selectionPDataArray[i] = mergeTDataArray[i] = rand() % 1000;
         printf("%d ", selectionTDataArray[i]);
     }
     printf("\n");

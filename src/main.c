@@ -7,7 +7,7 @@ int main(int argc, char const *argv[]) {
     makeArray();
     // selectionSortProcess();
     // selectionSortThread();
-    func();
+    mergeSortThread();
     cleanArray();
     return 0;
 }
