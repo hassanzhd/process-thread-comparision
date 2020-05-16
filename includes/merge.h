@@ -66,10 +66,16 @@ int *mergeArray;                   // for merge function
 int sizeArray[THREAD_MAX] = {-1};  // size of different partitions (i.e 4 different divisions)
 int increment[THREAD_MAX] = {0};   // arrays that will be used to increment merge array for merge function
 
-void *mergeThread(void *__args) {
+void *msThread(void *__args) {
     int factor = divideThreadNumber++;
     mergeSort(divideArray, sizeArray[factor]);
     divideArray += sizeArray[factor];
+}
+
+void *mergingThread(void *__args) {
+    int first = divideThreadNumber++;
+    int second = divideThreadNumber++;
+    merge((int *)__args, mergeArray + (increment[first]), mergeArray + (increment[second]), sizeArray[first], sizeArray[second]);
 }
 
 void mergeSortThread() {
@@ -106,7 +112,7 @@ void mergeSortThread() {
     int secondHalf[numberOfElements - mid];
 
     for (int i = 0; i < THREAD_MAX; i++) {
-        pthread_create(&threads[i], NULL, mergeThread, (void *)NULL);
+        pthread_create(&threads[i], NULL, msThread, (void *)NULL);
     }
 
     for (int i = 0; i < THREAD_MAX; i++) {
@@ -116,8 +122,12 @@ void mergeSortThread() {
     /* The four different parts will be combined into 2 (firstHalf and secondHalf) and then 
     completely merged into a single array */
 
-    merge(firstHalf, mergeArray + (increment[0]), mergeArray + (increment[1]), sizeArray[0], sizeArray[1]);
-    merge(secondHalf, mergeArray + (increment[2]), mergeArray + (increment[3]), sizeArray[2], sizeArray[3]);
+    divideThreadNumber = 0;
+    pthread_create(&threads[0], NULL, mergingThread, &firstHalf);
+    pthread_create(&threads[1], NULL, mergingThread, &secondHalf);
+    pthread_join(threads[0], NULL);
+    pthread_join(threads[1], NULL);
+
     merge(mergeTDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
 
     printf("\nElements after sorting:\n");
