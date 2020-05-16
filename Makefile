@@ -11,4 +11,4 @@ run:
 	@./bin/main
 
 clean:
-	rm -rf ./bin/main ./obj/*.o
+	rm -rf ./bin/* ./obj/*.o
