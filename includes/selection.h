@@ -83,7 +83,7 @@ void selectionSortThread() {
 
 int selectionProcessNumber;
 int *selectionProcessArr;
-int fd[4][2];
+int fd[THREAD_MAX][2];
 
 void minimumProcess() {
     int i, start = selectionProcessNumber;
