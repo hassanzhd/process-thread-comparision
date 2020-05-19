@@ -101,6 +101,8 @@ void minimumProcess() {
 void IPC() {
     pid_t process[4];
     int minArray[4];
+
+    // a minimum each will be read from the four different arrays partitions
     process[0] = fork();
     if (process[0] == 0) {
         minimumProcess();
@@ -131,10 +133,13 @@ void IPC() {
             }
         }
         wait(NULL);
+
+        // reading from pipes
         for (int i = 0; i < PROCESS_MAX; i++) {
             read(fd[i][0], &minArray[i], sizeof(int));
         }
 
+        // checking minimum out of all 4 minimums
         min = minArray[0];
         for (int i = 1; i < PROCESS_MAX; i++) {
             if (selectionProcessArr[minArray[i]] < selectionProcessArr[min]) {
