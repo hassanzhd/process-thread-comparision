@@ -60,11 +60,32 @@ void mergeSort(int __array[], int n) {
     }
 }
 
-int divideThreadNumber = 0, factor;
 int *divideArray;                  // for mergeSort function
 int *mergeArray;                   // for merge function
 int sizeArray[THREAD_MAX] = {-1};  // size of different partitions (i.e 4 different divisions)
 int increment[THREAD_MAX] = {0};   // arrays that will be used to increment merge array for merge function
+
+void msSetter() {
+    int num = numberOfElements, i = 0, j = 4;
+    while (num > 0) {
+        int value = ceil((float)num / j);
+        sizeArray[i] = value;
+        num -= value;
+        i++;
+        j--;
+    }  // calculating sizes of different partitions as array is divided into 4 parts
+
+    for (int i = 0; i < THREAD_MAX; i++) {
+        int value = 0;
+        for (int j = 0; j < i; j++) {
+            value += sizeArray[j];
+        }
+        increment[i] = value;
+    } /*  calculating increment values that will be needed to merge 4 paritions into 2 
+    i.e firstHalf and secondHalf */
+}
+
+int divideThreadNumber = 0;
 
 void *msThread(void *__args) {
     int factor = divideThreadNumber++;
@@ -85,27 +106,10 @@ void mergeSortThread() {
 
     divideArray = mergeTDataArray;
     mergeArray = mergeTDataArray;
-    int num = numberOfElements, i = 0, j = 4;
     pthread_t threads[THREAD_MAX];
 
     clock_t start;
     start = clock();
-    while (num > 0) {
-        int value = ceil((float)num / j);
-        sizeArray[i] = value;
-        num -= value;
-        i++;
-        j--;
-    }  // calculating sizes of different partitions as array is divided into 4 parts
-
-    for (int i = 0; i < THREAD_MAX; i++) {
-        int value = 0;
-        for (int j = 0; j < i; j++) {
-            value += sizeArray[j];
-        }
-        increment[i] = value;
-    } /*  calculating increment values that will be needed to merge 4 paritions into 2 
-    i.e firstHalf and secondHalf */
 
     int mid = ceil((float)numberOfElements / 2);
     int firstHalf[mid];
@@ -138,6 +142,114 @@ void mergeSortThread() {
 
     start = clock() - start;
     printf("\nTime taken for sorting using threads: %f seconds\n", (float)start / CLOCKS_PER_SEC);
+}
+
+int divideProcessNumber = 0;
+int fd[PROCESS_MAX][2];
+
+void msProcess() {
+    int factor = divideProcessNumber, tempArray[sizeArray[factor]];
+    mergeSort(divideArray, sizeArray[factor]);
+    for (int i = 0; i < sizeArray[factor]; i++) {
+        tempArray[i] = divideArray[i];
+    }
+    write(fd[factor][1], &tempArray, sizeArray[factor] * sizeof(int));
+}
+
+void mergeSortProcess() {
+    printf("\n=====================\n");
+    printf("SORTING USING PROCESS\n");
+    printf("=====================\n");
+
+    pid_t process[PROCESS_MAX];
+    divideArray = mergePDataArray;
+    mergeArray = mergePDataArray;
+
+    int process1Array[sizeArray[0]];
+    int process2Array[sizeArray[1]];
+    int process3Array[sizeArray[2]];
+    int process4Array[sizeArray[3]];
+
+    int mid = ceil((float)numberOfElements / 2);
+    int firstHalf[mid];
+    int secondHalf[numberOfElements - mid];
+
+    clock_t start;
+    start = clock();
+
+    for (int i = 0; i < PROCESS_MAX; i++) {
+        pipe(fd[i]);
+    }
+
+    process[0] = fork();
+    if (process[0] == 0) {
+        msProcess();
+        exit(0);
+    } else if (process[0] > 0) {
+        process[1] = fork();
+        divideArray += sizeArray[divideProcessNumber];
+        divideProcessNumber++;
+
+        if (process[1] == 0) {
+            msProcess();
+            exit(0);
+        } else if (process[1] > 0) {
+            process[2] = fork();
+            divideArray += sizeArray[divideProcessNumber];
+            divideProcessNumber++;
+
+            if (process[2] == 0) {
+                msProcess();
+                exit(0);
+            } else if (process[2] > 0) {
+                process[3] = fork();
+                divideArray += sizeArray[divideProcessNumber];
+                divideProcessNumber++;
+
+                if (process[3] == 0) {
+                    msProcess();
+                    exit(0);
+                }
+            }
+        }
+
+        wait(NULL);
+        read(fd[0][0], &process1Array, sizeArray[0] * sizeof(int));
+        read(fd[1][0], &process2Array, sizeArray[1] * sizeof(int));
+        read(fd[2][0], &process3Array, sizeArray[2] * sizeof(int));
+        read(fd[3][0], &process4Array, sizeArray[3] * sizeof(int));
+
+        process[0] = fork();
+
+        if (process[0] == 0) {
+            merge(firstHalf, process1Array, process2Array, sizeArray[0], sizeArray[1]);
+            write(fd[0][1], &firstHalf, mid * sizeof(int));
+            exit(0);
+
+        } else if (process[0] > 0) {
+            process[1] = fork();
+
+            if (process[1] == 0) {
+                merge(secondHalf, process3Array, process4Array, sizeArray[2], sizeArray[3]);
+                write(fd[1][1], &secondHalf, (numberOfElements - mid) * sizeof(int));
+                exit(0);
+            }
+
+            wait(NULL);
+            read(fd[0][0], &firstHalf, mid * sizeof(int));
+            read(fd[1][0], &secondHalf, (numberOfElements - mid) * sizeof(int));
+            merge(mergePDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
+
+            printf("\nElements after sorting:\n");
+            for (int i = 0; i < numberOfElements; i++) {
+                printf("%d ", mergePDataArray[i]);
+            }
+            printf("\n");
+        }
+    }
+
+    start = clock() - start;
+    printf("\nTime taken for sorting using process: %f seconds\n", (float)start / CLOCKS_PER_SEC);
 }
 
 #endif

@@ -5,8 +5,10 @@
 
 int main(int argc, char const *argv[]) {
     makeArray();
-    // selectionSortProcess();
-    // selectionSortThread();
+    selectionSortProcess();
+    selectionSortThread();
+    msSetter();
+    mergeSortProcess();
     mergeSortThread();
     cleanArray();
     return 0;
