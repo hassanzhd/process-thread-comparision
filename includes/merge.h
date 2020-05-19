@@ -85,19 +85,19 @@ void msSetter() {
     i.e firstHalf and secondHalf */
 }
 
-int divideThreadNumber = 0;
+int divideThreadNumber = 0;  // for getting appropiate partition
 
 void *msThread(void *__args) {
     int factor = divideThreadNumber++;
     mergeSort(divideArray, sizeArray[factor]);
     divideArray += sizeArray[factor];
-}
+}  // function that performs merge-sort on 4 different partitions
 
 void *mergingThread(void *__args) {
     int first = divideThreadNumber++;
     int second = divideThreadNumber++;
     merge((int *)__args, mergeArray + (increment[first]), mergeArray + (increment[second]), sizeArray[first], sizeArray[second]);
-}
+}  // function that forms 2 arrays i.e. firstHalf and secondHalf
 
 void mergeSortThread() {
     printf("\n=====================\n");
@@ -117,21 +117,24 @@ void mergeSortThread() {
 
     for (int i = 0; i < THREAD_MAX; i++) {
         pthread_create(&threads[i], NULL, msThread, (void *)NULL);
-    }
+    }  // 4 threads will run in parallel each working on a single different partition
 
     for (int i = 0; i < THREAD_MAX; i++) {
         pthread_join(threads[i], NULL);
-    }
+    }  // joining threads
 
     /* The four different parts will be combined into 2 (firstHalf and secondHalf) and then 
     completely merged into a single array */
 
     divideThreadNumber = 0;
+
+    /* merging 4 partitions into 2 i.e. firstHalf and secondHalf via threads */
     pthread_create(&threads[0], NULL, mergingThread, &firstHalf);
     pthread_create(&threads[1], NULL, mergingThread, &secondHalf);
     pthread_join(threads[0], NULL);
     pthread_join(threads[1], NULL);
 
+    /* merging firstHalf and secondHalf into original mergeTDataArray */
     merge(mergeTDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
 
     printf("\nElements after sorting:\n");
@@ -144,8 +147,8 @@ void mergeSortThread() {
     printf("\nTime taken for sorting using threads: %f seconds\n", (float)start / CLOCKS_PER_SEC);
 }
 
-int divideProcessNumber = 0;
-int fd[PROCESS_MAX][2];
+int divideProcessNumber = 0;  // for getting appropiate partition
+int fd[PROCESS_MAX][2];       // fileDiscripters that will be used for implementing pipes
 
 void msProcess() {
     int factor = divideProcessNumber, tempArray[sizeArray[factor]];
@@ -154,7 +157,7 @@ void msProcess() {
         tempArray[i] = divideArray[i];
     }
     write(fd[factor][1], &tempArray, sizeArray[factor] * sizeof(int));
-}
+}  // function that performs merge-sort on 4 different partitions
 
 void mergeSortProcess() {
     printf("\n=====================\n");
@@ -164,6 +167,8 @@ void mergeSortProcess() {
     pid_t process[PROCESS_MAX];
     divideArray = mergePDataArray;
     mergeArray = mergePDataArray;
+
+    /* Arrays below are for each process that will contain sorted partitions */
 
     int process1Array[sizeArray[0]];
     int process2Array[sizeArray[1]];
@@ -181,7 +186,9 @@ void mergeSortProcess() {
         pipe(fd[i]);
     }
 
+    // partitions being sorted using processes
     process[0] = fork();
+
     if (process[0] == 0) {
         msProcess();
         exit(0);
@@ -214,11 +221,14 @@ void mergeSortProcess() {
         }
 
         wait(NULL);
+
+        /* reading from pipes */
         read(fd[0][0], &process1Array, sizeArray[0] * sizeof(int));
         read(fd[1][0], &process2Array, sizeArray[1] * sizeof(int));
         read(fd[2][0], &process3Array, sizeArray[2] * sizeof(int));
         read(fd[3][0], &process4Array, sizeArray[3] * sizeof(int));
 
+        // merging 4 different partition arrays into firstHalf and secondHalf in parallel
         process[0] = fork();
 
         if (process[0] == 0) {
@@ -236,8 +246,12 @@ void mergeSortProcess() {
             }
 
             wait(NULL);
+
+            // reading from pipes
             read(fd[0][0], &firstHalf, mid * sizeof(int));
             read(fd[1][0], &secondHalf, (numberOfElements - mid) * sizeof(int));
+
+            // merging firstHalf and secondHalf into original mergePDataArray
             merge(mergePDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
 
             printf("\nElements after sorting:\n");
