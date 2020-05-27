@@ -11,6 +11,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#define THREAD_MAX 4  // maximum number of threads depending upon cores
+#define PROCESS_MAX 4
+
+int qfd[PROCESS_MAX][2];
+int qSizeArray[PROCESS_MAX] = {-1};
+
 #include "data.h"
 
 struct args {
@@ -56,10 +62,16 @@ void *qsThread(void *__args) {
 
         pthread_t threads[THREAD_MAX];
 
-        pthread_create(&threads[0], NULL, qsThread, &v1);
-        pthread_create(&threads[1], NULL, qsThread, &v2);
-        pthread_join(threads[0], NULL);
-        pthread_join(threads[1], NULL);
+        int firstThread = pthread_create(&threads[0], NULL, qsThread, &v1);
+        int secondThread = pthread_create(&threads[1], NULL, qsThread, &v2);
+
+        if (firstThread == 0) {
+            pthread_join(threads[0], NULL);
+        }
+
+        if (secondThread == 0) {
+            pthread_join(threads[1], NULL);
+        }
     }
     return NULL;
 }
@@ -88,4 +100,167 @@ void quickSortThread() {
     printf("\nTime taken for sorting using threads: %f seconds\n", (float)start / CLOCKS_PER_SEC);
 }
 
+void quickSort(int __array[], int l, int h) {
+    if (l < h) {
+        int j = partition(__array, l, h);
+        quickSort(__array, l, j - 1);
+        quickSort(__array, j + 1, h);
+    }
+}
+
+void quickMerge(int __original[], int __left[], int __right[], int __llength, int __rlength) {
+    int i = 0, j = 0, k = 0;
+    while (i < __llength && j < __rlength) {
+        if (__left[i] <= __right[j]) {
+            __original[k] = __left[i];
+            k++;
+            i++;
+        } else {
+            __original[k] = __right[j];
+            k++;
+            j++;
+        }
+    }
+
+    while (i < __llength) {
+        __original[k] = __left[i];
+        i++;
+        k++;
+    }
+
+    while (j < __rlength) {
+        __original[k] = __right[j];
+        j++;
+        k++;
+    }
+}
+
+void quickSortProcess() {
+    printf("\n=====================\n");
+    printf("SORTING USING PROCESS\n");
+    printf("=====================\n");
+
+    int process[PROCESS_MAX];
+    int start = 0;
+    int factor = ceil((float)numberOfElements / PROCESS_MAX);
+
+    int process1Array[qSizeArray[0]];
+    int process2Array[qSizeArray[1]];
+    int process3Array[qSizeArray[2]];
+    int process4Array[qSizeArray[3]];
+
+    int mid = ceil((float)numberOfElements / 2);
+    int firstHalf[mid];
+    int secondHalf[numberOfElements - mid];
+
+    clock_t initial;
+    initial = clock();
+
+    for (int i = 0; i < PROCESS_MAX; i++) {
+        pipe(qfd[i]);
+    }
+
+    process[0] = fork();
+
+    if (process[0] == 0) {
+        int tempArray[qSizeArray[start]];
+        quickSort(quickPDataArray, start * factor, ((start + 1) * factor) - 1);
+        for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
+            tempArray[i] = quickPDataArray[j];
+        }
+        // for (int i = 0; i < qSizeArray[start]; i++) {
+        //     printf("%d ", tempArray[i]);
+        // }
+        // printf("\n");
+        write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
+        exit(0);
+    } else if (process[0] > 0) {
+        process[1] = fork();
+        start++;
+        if (process[1] == 0) {
+            int tempArray[qSizeArray[start]];
+            quickSort(quickPDataArray, start * factor, ((start + 1) * factor) - 1);
+            for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
+                tempArray[i] = quickPDataArray[j];
+            }
+            // for (int i = 0; i < qSizeArray[start]; i++) {
+            //     printf("%d ", tempArray[i]);
+            // }
+            // printf("\n");
+            write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
+            exit(0);
+        } else if (process[1] > 0) {
+            process[2] = fork();
+            start++;
+            if (process[2] == 0) {
+                int tempArray[qSizeArray[start]];
+                quickSort(quickPDataArray, start * factor, ((start + 1) * factor) - 1);
+                for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
+                    tempArray[i] = quickPDataArray[j];
+                }
+                // for (int i = 0; i < qSizeArray[start]; i++) {
+                //     printf("%d ", tempArray[i]);
+                // }
+                // printf("\n");
+                write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
+                exit(0);
+            } else if (process[2] > 0) {
+                process[3] = fork();
+                start++;
+                if (process[3] == 0) {
+                    int tempArray[qSizeArray[start]];
+                    quickSort(quickPDataArray, start * factor, ((start + 1) * factor) - 1);
+                    for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
+                        tempArray[i] = quickPDataArray[j];
+                    }
+                    // for (int i = 0; i < qSizeArray[start]; i++) {
+                    //     printf("%d ", tempArray[i]);
+                    // }
+                    // printf("\n");
+                    write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
+                    exit(0);
+                }
+            }
+        }
+        wait(NULL);
+        read(qfd[0][0], &process1Array, qSizeArray[0] * sizeof(int));
+        read(qfd[1][0], &process2Array, qSizeArray[1] * sizeof(int));
+        read(qfd[2][0], &process3Array, qSizeArray[2] * sizeof(int));
+        read(qfd[3][0], &process4Array, qSizeArray[3] * sizeof(int));
+
+        process[0] = fork();
+
+        if (process[0] == 0) {
+            quickMerge(firstHalf, process1Array, process2Array, mSizeArray[0], mSizeArray[1]);
+            write(qfd[0][1], &firstHalf, mid * sizeof(int));
+            exit(0);
+
+        } else if (process[0] > 0) {
+            process[1] = fork();
+
+            if (process[1] == 0) {
+                quickMerge(secondHalf, process3Array, process4Array, mSizeArray[2], mSizeArray[3]);
+                write(qfd[1][1], &secondHalf, (numberOfElements - mid) * sizeof(int));
+                exit(0);
+            }
+
+            wait(NULL);
+
+            // reading from pipes
+            read(qfd[0][0], &firstHalf, mid * sizeof(int));
+            read(qfd[1][0], &secondHalf, (numberOfElements - mid) * sizeof(int));
+
+            // merging firstHalf and secondHalf into original mergePDataArray
+            quickMerge(quickPDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
+
+            for (int i = 0; i < numberOfElements; i++) {
+                printf("%d ", quickPDataArray[i]);
+            }
+            printf("\n");
+        }
+    }
+
+    initial = clock() - initial;
+    printf("\nTime taken for soriting using process: %f seconds\n", (float)initial / CLOCKS_PER_SEC);
+}
 #endif

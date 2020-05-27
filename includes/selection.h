@@ -15,6 +15,9 @@
 
 /* Selection sort thread implementation */
 
+#define THREAD_MAX 4  // maximum number of threads depending upon cores
+#define PROCESS_MAX 4
+
 int selectionThreadNumber = 0;  // helps in partitioning array (start/end values)
 int *selectionThreadArr;        /* for minimum calculation as no inner loop exists hence array must be 
                         in sync with main loop. Increments with every iteration */
