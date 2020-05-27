@@ -123,11 +123,11 @@ void mergeSortThread() {
     /* merging firstHalf and secondHalf into original mergeTDataArray */
     merge(mergeTDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
 
-    printf("\nElements after sorting:\n");
-    for (int i = 0; i < numberOfElements; i++) {
-        printf("%d ", mergeTDataArray[i]);
-    }
-    printf("\n");
+    // printf("\nElements after sorting:\n");
+    // for (int i = 0; i < numberOfElements; i++) {
+    //     printf("%d ", mergeTDataArray[i]);
+    // }
+    // printf("\n");
 
     start = clock() - start;
     printf("\nTime taken for sorting using threads: %f seconds\n", (float)start / CLOCKS_PER_SEC);
@@ -170,60 +170,82 @@ void mergeSortProcess() {
     }
 
     // partitions being sorted using processes
-    for (int i = 0; i < 4; i++) {
-        process[i] = fork();
-        if (process[i] == 0) {
-            msProcess();
-            exit(0);
-        } else if (process[i] > 0) {
-            divideArray += mSizeArray[divideProcessNumber];
-            divideProcessNumber++;
-        }
-    }
-
-    wait(NULL);
-
-    /* reading from pipes */
-    read(fd[0][0], &process1Array, mSizeArray[0] * sizeof(int));
-    read(fd[1][0], &process2Array, mSizeArray[1] * sizeof(int));
-    read(fd[2][0], &process3Array, mSizeArray[2] * sizeof(int));
-    read(fd[3][0], &process4Array, mSizeArray[3] * sizeof(int));
-
-    // merging 4 different partition arrays into firstHalf and secondHalf in parallel
     process[0] = fork();
 
     if (process[0] == 0) {
-        merge(firstHalf, process1Array, process2Array, mSizeArray[0], mSizeArray[1]);
-        write(fd[0][1], &firstHalf, mid * sizeof(int));
+        msProcess();
         exit(0);
-
     } else if (process[0] > 0) {
         process[1] = fork();
+        divideArray += mSizeArray[divideProcessNumber];
+        divideProcessNumber++;
 
         if (process[1] == 0) {
-            merge(secondHalf, process3Array, process4Array, mSizeArray[2], mSizeArray[3]);
-            write(fd[1][1], &secondHalf, (numberOfElements - mid) * sizeof(int));
+            msProcess();
             exit(0);
+        } else if (process[1] > 0) {
+            process[2] = fork();
+            divideArray += mSizeArray[divideProcessNumber];
+            divideProcessNumber++;
+
+            if (process[2] == 0) {
+                msProcess();
+                exit(0);
+            } else if (process[2] > 0) {
+                process[3] = fork();
+                divideArray += mSizeArray[divideProcessNumber];
+                divideProcessNumber++;
+
+                if (process[3] == 0) {
+                    msProcess();
+                    exit(0);
+                }
+            }
         }
 
         wait(NULL);
 
-        // reading from pipes
-        read(fd[0][0], &firstHalf, mid * sizeof(int));
-        read(fd[1][0], &secondHalf, (numberOfElements - mid) * sizeof(int));
+        /* reading from pipes */
+        read(fd[0][0], &process1Array, mSizeArray[0] * sizeof(int));
+        read(fd[1][0], &process2Array, mSizeArray[1] * sizeof(int));
+        read(fd[2][0], &process3Array, mSizeArray[2] * sizeof(int));
+        read(fd[3][0], &process4Array, mSizeArray[3] * sizeof(int));
 
-        // merging firstHalf and secondHalf into original mergePDataArray
-        merge(mergePDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
+        // merging 4 different partition arrays into firstHalf and secondHalf in parallel
+        process[0] = fork();
 
-        printf("\nElements after sorting:\n");
-        for (int i = 0; i < numberOfElements; i++) {
-            printf("%d ", mergePDataArray[i]);
+        if (process[0] == 0) {
+            merge(firstHalf, process1Array, process2Array, mSizeArray[0], mSizeArray[1]);
+            write(fd[0][1], &firstHalf, mid * sizeof(int));
+            exit(0);
+
+        } else if (process[0] > 0) {
+            process[1] = fork();
+
+            if (process[1] == 0) {
+                merge(secondHalf, process3Array, process4Array, mSizeArray[2], mSizeArray[3]);
+                write(fd[1][1], &secondHalf, (numberOfElements - mid) * sizeof(int));
+                exit(0);
+            }
+
+            wait(NULL);
+
+            // reading from pipes
+            read(fd[0][0], &firstHalf, mid * sizeof(int));
+            read(fd[1][0], &secondHalf, (numberOfElements - mid) * sizeof(int));
+
+            // merging firstHalf and secondHalf into original mergePDataArray
+            merge(mergePDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
+
+            // printf("\nElements after sorting:\n");
+            // for (int i = 0; i < numberOfElements; i++) {
+            //     printf("%d ", mergePDataArray[i]);
+            // }
+            // printf("\n");
         }
-        printf("\n");
+
+        start = clock() - start;
+        printf("\nTime taken for sorting using process: %f seconds\n", (float)start / CLOCKS_PER_SEC);
     }
-
-    start = clock() - start;
-    printf("\nTime taken for sorting using process: %f seconds\n", (float)start / CLOCKS_PER_SEC);
 }
-
 #endif
