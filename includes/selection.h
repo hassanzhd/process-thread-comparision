@@ -72,11 +72,11 @@ void selectionSortThread() {
         min = 0;
     }
 
-    printf("\nElements after sorting:\n");
-    for (int i = 0; i < numberOfElements; i++) {
-        printf("%d ", selectionTDataArray[i]);
-    }
-    printf("\n");
+    // printf("\nElements after sorting:\n");
+    // for (int i = 0; i < numberOfElements; i++) {
+    //     printf("%d ", selectionTDataArray[i]);
+    // }
+    // printf("\n");
 
     start = clock() - start;
     printf("\nTime taken for sorting using threads: %f seconds\n", (float)start / CLOCKS_PER_SEC);
@@ -180,11 +180,11 @@ void selectionSortProcess() {
         boundary--;
         min = 0;
     }
-    printf("\nElements after sorting:\n");
-    for (int i = 0; i < numberOfElements; i++) {
-        printf("%d ", selectionPDataArray[i]);
-    }
-    printf("\n");
+    // printf("\nElements after sorting:\n");
+    // for (int i = 0; i < numberOfElements; i++) {
+    //     printf("%d ", selectionPDataArray[i]);
+    // }
+    // printf("\n");
 
     start = clock() - start;
     printf("\nTime taken for sorting using processes: %f seconds\n", (float)start / CLOCKS_PER_SEC);

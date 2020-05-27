@@ -16,10 +16,14 @@ int *quickPDataArray;      // Array for quick sort process implementation
 #include "quick.h"
 
 void makeArray() {
+    int range;
+
     srand(time(0));
 
     printf("\nEnter number of elements: ");
     scanf("%d", &numberOfElements);
+    printf("Enter range: ");
+    scanf("%d", &range);
     selectionTDataArray = (int *)calloc(numberOfElements, sizeof(int));
     selectionPDataArray = (int *)calloc(numberOfElements, sizeof(int));
     mergeTDataArray = (int *)calloc(numberOfElements, sizeof(int));
@@ -29,7 +33,7 @@ void makeArray() {
 
     printf("\nOriginal Array:\n");
     for (int i = 0, j = numberOfElements; i < numberOfElements; i++, j--) {
-        selectionTDataArray[i] = selectionPDataArray[i] = mergeTDataArray[i] = mergePDataArray[i] = quickTDataArray[i] = quickPDataArray[i] = rand() % 1000;
+        selectionTDataArray[i] = selectionPDataArray[i] = mergeTDataArray[i] = mergePDataArray[i] = quickTDataArray[i] = quickPDataArray[i] = rand() % range;
         printf("%d ", selectionTDataArray[i]);
     }
     printf("\n");

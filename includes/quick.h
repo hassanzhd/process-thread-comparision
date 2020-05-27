@@ -11,11 +11,11 @@
 #include <time.h>
 #include <unistd.h>
 
-#define THREAD_MAX 4  // maximum number of threads depending upon cores
-#define PROCESS_MAX 4
+#define THREAD_MAX 4   // maximum number of threads depending upon cores
+#define PROCESS_MAX 4  // maximum number of processes depending upon cores
 
-int qfd[PROCESS_MAX][2];
-int qSizeArray[PROCESS_MAX] = {-1};
+int qfd[PROCESS_MAX][2];             // file discriptors used for pipes
+int qSizeArray[PROCESS_MAX] = {-1};  // size of different partitions (i.e 4 different divisions)
 
 #include "data.h"
 
@@ -90,11 +90,11 @@ void quickSortThread() {
 
     qsThread(&arg);
 
-    printf("\nElements after sorting:\n");
-    for (int i = 0; i < numberOfElements; i++) {
-        printf("%d ", quickTDataArray[i]);
-    }
-    printf("\n");
+    // printf("\nElements after sorting:\n");
+    // for (int i = 0; i < numberOfElements; i++) {
+    //     printf("%d ", quickTDataArray[i]);
+    // }
+    // printf("\n");
 
     start = clock() - start;
     printf("\nTime taken for sorting using threads: %f seconds\n", (float)start / CLOCKS_PER_SEC);
@@ -253,10 +253,11 @@ void quickSortProcess() {
             // merging firstHalf and secondHalf into original mergePDataArray
             quickMerge(quickPDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
 
-            for (int i = 0; i < numberOfElements; i++) {
-                printf("%d ", quickPDataArray[i]);
-            }
-            printf("\n");
+            // printf("\nElements after sort:\n");
+            // for (int i = 0; i < numberOfElements; i++) {
+            //     printf("%d ", quickPDataArray[i]);
+            // }
+            // printf("\n");
         }
     }
 
