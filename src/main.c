@@ -6,12 +6,13 @@
 
 int main(int argc, char const *argv[]) {
     makeArray();
+    setter();
     selectionSortProcess();
     selectionSortThread();
-    msSetter();
     mergeSortProcess();
     mergeSortThread();
     quickSortThread();
+    quickSortProcess();
     cleanArray();
     return 0;
 }

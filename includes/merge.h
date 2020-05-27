@@ -11,6 +11,18 @@
 #include <time.h>
 #include <unistd.h>
 
+#define THREAD_MAX 4  // maximum number of threads depending upon cores
+#define PROCESS_MAX 4
+
+int *divideArray;                   // for mergeSort function
+int *mergeArray;                    // for merge function
+int mSizeArray[THREAD_MAX] = {-1};  // size of different partitions (i.e 4 different divisions)
+int increment[THREAD_MAX] = {0};    // arrays that will be used to increment merge array for merge function
+int divideThreadNumber = 0;         // for getting appropiate partition
+
+int divideProcessNumber = 0;  // for getting appropiate partition
+int fd[PROCESS_MAX][2];       // fileDiscripters that will be used for implementing pipes
+
 #include "data.h"
 
 void merge(int __original[], int __left[], int __right[], int __llength, int __rlength) {
@@ -39,6 +51,7 @@ void merge(int __original[], int __left[], int __right[], int __llength, int __r
         k++;
     }
 }
+
 void mergeSort(int __array[], int n) {
     if (n < 2) {
         return;
@@ -60,43 +73,16 @@ void mergeSort(int __array[], int n) {
     }
 }
 
-int *divideArray;                  // for mergeSort function
-int *mergeArray;                   // for merge function
-int sizeArray[THREAD_MAX] = {-1};  // size of different partitions (i.e 4 different divisions)
-int increment[THREAD_MAX] = {0};   // arrays that will be used to increment merge array for merge function
-
-void msSetter() {
-    int num = numberOfElements, i = 0, j = 4;
-    while (num > 0) {
-        int value = ceil((float)num / j);
-        sizeArray[i] = value;
-        num -= value;
-        i++;
-        j--;
-    }  // calculating sizes of different partitions as array is divided into 4 parts
-
-    for (int i = 0; i < THREAD_MAX; i++) {
-        int value = 0;
-        for (int j = 0; j < i; j++) {
-            value += sizeArray[j];
-        }
-        increment[i] = value;
-    } /*  calculating increment values that will be needed to merge 4 paritions into 2 
-    i.e firstHalf and secondHalf */
-}
-
-int divideThreadNumber = 0;  // for getting appropiate partition
-
 void *msThread(void *__args) {
     int factor = divideThreadNumber++;
-    mergeSort(divideArray, sizeArray[factor]);
-    divideArray += sizeArray[factor];
+    mergeSort(divideArray, mSizeArray[factor]);
+    divideArray += mSizeArray[factor];
 }  // function that performs merge-sort on 4 different partitions
 
 void *mergingThread(void *__args) {
     int first = divideThreadNumber++;
     int second = divideThreadNumber++;
-    merge((int *)__args, mergeArray + (increment[first]), mergeArray + (increment[second]), sizeArray[first], sizeArray[second]);
+    merge((int *)__args, mergeArray + (increment[first]), mergeArray + (increment[second]), mSizeArray[first], mSizeArray[second]);
 }  // function that forms 2 arrays i.e. firstHalf and secondHalf
 
 void mergeSortThread() {
@@ -147,16 +133,13 @@ void mergeSortThread() {
     printf("\nTime taken for sorting using threads: %f seconds\n", (float)start / CLOCKS_PER_SEC);
 }
 
-int divideProcessNumber = 0;  // for getting appropiate partition
-int fd[PROCESS_MAX][2];       // fileDiscripters that will be used for implementing pipes
-
 void msProcess() {
-    int factor = divideProcessNumber, tempArray[sizeArray[factor]];
-    mergeSort(divideArray, sizeArray[factor]);
-    for (int i = 0; i < sizeArray[factor]; i++) {
+    int factor = divideProcessNumber, tempArray[mSizeArray[factor]];
+    mergeSort(divideArray, mSizeArray[factor]);
+    for (int i = 0; i < mSizeArray[factor]; i++) {
         tempArray[i] = divideArray[i];
     }
-    write(fd[factor][1], &tempArray, sizeArray[factor] * sizeof(int));
+    write(fd[factor][1], &tempArray, mSizeArray[factor] * sizeof(int));
 }  // function that performs merge-sort on 4 different partitions
 
 void mergeSortProcess() {
@@ -170,10 +153,10 @@ void mergeSortProcess() {
 
     /* Arrays below are for each process that will contain sorted partitions */
 
-    int process1Array[sizeArray[0]];
-    int process2Array[sizeArray[1]];
-    int process3Array[sizeArray[2]];
-    int process4Array[sizeArray[3]];
+    int process1Array[mSizeArray[0]];
+    int process2Array[mSizeArray[1]];
+    int process3Array[mSizeArray[2]];
+    int process4Array[mSizeArray[3]];
 
     int mid = ceil((float)numberOfElements / 2);
     int firstHalf[mid];
@@ -187,79 +170,56 @@ void mergeSortProcess() {
     }
 
     // partitions being sorted using processes
+    for (int i = 0; i < 4; i++) {
+        process[i] = fork();
+        if (process[i] == 0) {
+            msProcess();
+            exit(0);
+        } else if (process[i] > 0) {
+            divideArray += mSizeArray[divideProcessNumber];
+            divideProcessNumber++;
+        }
+    }
+
+    wait(NULL);
+
+    /* reading from pipes */
+    read(fd[0][0], &process1Array, mSizeArray[0] * sizeof(int));
+    read(fd[1][0], &process2Array, mSizeArray[1] * sizeof(int));
+    read(fd[2][0], &process3Array, mSizeArray[2] * sizeof(int));
+    read(fd[3][0], &process4Array, mSizeArray[3] * sizeof(int));
+
+    // merging 4 different partition arrays into firstHalf and secondHalf in parallel
     process[0] = fork();
 
     if (process[0] == 0) {
-        msProcess();
+        merge(firstHalf, process1Array, process2Array, mSizeArray[0], mSizeArray[1]);
+        write(fd[0][1], &firstHalf, mid * sizeof(int));
         exit(0);
+
     } else if (process[0] > 0) {
         process[1] = fork();
-        divideArray += sizeArray[divideProcessNumber];
-        divideProcessNumber++;
 
         if (process[1] == 0) {
-            msProcess();
+            merge(secondHalf, process3Array, process4Array, mSizeArray[2], mSizeArray[3]);
+            write(fd[1][1], &secondHalf, (numberOfElements - mid) * sizeof(int));
             exit(0);
-        } else if (process[1] > 0) {
-            process[2] = fork();
-            divideArray += sizeArray[divideProcessNumber];
-            divideProcessNumber++;
-
-            if (process[2] == 0) {
-                msProcess();
-                exit(0);
-            } else if (process[2] > 0) {
-                process[3] = fork();
-                divideArray += sizeArray[divideProcessNumber];
-                divideProcessNumber++;
-
-                if (process[3] == 0) {
-                    msProcess();
-                    exit(0);
-                }
-            }
         }
 
         wait(NULL);
 
-        /* reading from pipes */
-        read(fd[0][0], &process1Array, sizeArray[0] * sizeof(int));
-        read(fd[1][0], &process2Array, sizeArray[1] * sizeof(int));
-        read(fd[2][0], &process3Array, sizeArray[2] * sizeof(int));
-        read(fd[3][0], &process4Array, sizeArray[3] * sizeof(int));
+        // reading from pipes
+        read(fd[0][0], &firstHalf, mid * sizeof(int));
+        read(fd[1][0], &secondHalf, (numberOfElements - mid) * sizeof(int));
 
-        // merging 4 different partition arrays into firstHalf and secondHalf in parallel
-        process[0] = fork();
+        // merging firstHalf and secondHalf into original mergePDataArray
+        merge(mergePDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
 
-        if (process[0] == 0) {
-            merge(firstHalf, process1Array, process2Array, sizeArray[0], sizeArray[1]);
-            write(fd[0][1], &firstHalf, mid * sizeof(int));
-            exit(0);
-
-        } else if (process[0] > 0) {
-            process[1] = fork();
-
-            if (process[1] == 0) {
-                merge(secondHalf, process3Array, process4Array, sizeArray[2], sizeArray[3]);
-                write(fd[1][1], &secondHalf, (numberOfElements - mid) * sizeof(int));
-                exit(0);
-            }
-
-            wait(NULL);
-
-            // reading from pipes
-            read(fd[0][0], &firstHalf, mid * sizeof(int));
-            read(fd[1][0], &secondHalf, (numberOfElements - mid) * sizeof(int));
-
-            // merging firstHalf and secondHalf into original mergePDataArray
-            merge(mergePDataArray, firstHalf, secondHalf, mid, numberOfElements - mid);
-
-            printf("\nElements after sorting:\n");
-            for (int i = 0; i < numberOfElements; i++) {
-                printf("%d ", mergePDataArray[i]);
-            }
-            printf("\n");
+        printf("\nElements after sorting:\n");
+        for (int i = 0; i < numberOfElements; i++) {
+            printf("%d ", mergePDataArray[i]);
         }
+        printf("\n");
     }
 
     start = clock() - start;
