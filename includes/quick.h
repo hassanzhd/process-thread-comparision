@@ -168,10 +168,6 @@ void quickSortProcess() {
         for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
             tempArray[i] = quickPDataArray[j];
         }
-        // for (int i = 0; i < qSizeArray[start]; i++) {
-        //     printf("%d ", tempArray[i]);
-        // }
-        // printf("\n");
         write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
         exit(0);
     } else if (process[0] > 0) {
@@ -183,10 +179,6 @@ void quickSortProcess() {
             for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
                 tempArray[i] = quickPDataArray[j];
             }
-            // for (int i = 0; i < qSizeArray[start]; i++) {
-            //     printf("%d ", tempArray[i]);
-            // }
-            // printf("\n");
             write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
             exit(0);
         } else if (process[1] > 0) {
@@ -198,10 +190,6 @@ void quickSortProcess() {
                 for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
                     tempArray[i] = quickPDataArray[j];
                 }
-                // for (int i = 0; i < qSizeArray[start]; i++) {
-                //     printf("%d ", tempArray[i]);
-                // }
-                // printf("\n");
                 write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
                 exit(0);
             } else if (process[2] > 0) {
@@ -213,10 +201,6 @@ void quickSortProcess() {
                     for (int i = 0, j = start * factor; i < qSizeArray[start]; i++, j++) {
                         tempArray[i] = quickPDataArray[j];
                     }
-                    // for (int i = 0; i < qSizeArray[start]; i++) {
-                    //     printf("%d ", tempArray[i]);
-                    // }
-                    // printf("\n");
                     write(qfd[start][1], &tempArray, qSizeArray[start] * sizeof(int));
                     exit(0);
                 }
@@ -231,7 +215,7 @@ void quickSortProcess() {
         process[0] = fork();
 
         if (process[0] == 0) {
-            quickMerge(firstHalf, process1Array, process2Array, mSizeArray[0], mSizeArray[1]);
+            quickMerge(firstHalf, process1Array, process2Array, qSizeArray[0], qSizeArray[1]);
             write(qfd[0][1], &firstHalf, mid * sizeof(int));
             exit(0);
 
@@ -239,7 +223,7 @@ void quickSortProcess() {
             process[1] = fork();
 
             if (process[1] == 0) {
-                quickMerge(secondHalf, process3Array, process4Array, mSizeArray[2], mSizeArray[3]);
+                quickMerge(secondHalf, process3Array, process4Array, qSizeArray[2], qSizeArray[3]);
                 write(qfd[1][1], &secondHalf, (numberOfElements - mid) * sizeof(int));
                 exit(0);
             }
